@@ -132,7 +132,6 @@ Kafka settings are configured via `appsettings.json` or environment variables:
 | Orders Topic | `orders` | `Kafka__OrdersTopic` |
 | Dead Letter Topic | `orders-dlt` | `Kafka__DeadLetterTopic` |
 | Consumer Group | `orders-consumer-group` | `Kafka__ConsumerGroupId` |
-| Max Retry Attempts | `3` | `Kafka__MaxRetryAttempts` |
 | Notification Base URL | `http://localhost:5001` | `Kafka__NotificationBaseUrl` |
 
 ## Tech Stack

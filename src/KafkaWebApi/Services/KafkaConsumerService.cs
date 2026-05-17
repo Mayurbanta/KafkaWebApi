@@ -68,6 +68,9 @@ public class KafkaConsumerService : BackgroundService
                     {
                         consumer.StoreOffset(result);
                         consumer.Commit(result);
+
+                        _logger.LogDebug("Offset committed for [{Partition}] at {Offset}",
+                            result.Partition.Value, result.Offset.Value);
                     }
                     else
                     {
@@ -75,9 +78,6 @@ public class KafkaConsumerService : BackgroundService
                             "Skipping offset commit for [{Partition}] at {Offset} due to processing failure",
                             result.Partition.Value, result.Offset.Value);
                     }
-
-                    _logger.LogDebug("Offset committed for [{Partition}] at {Offset}",
-                        result.Partition.Value, result.Offset.Value);
                 }
                 catch (ConsumeException ex)
                 {
