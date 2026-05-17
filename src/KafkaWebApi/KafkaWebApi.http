@@ -1,6 +1,21 @@
-@KafkaWebApi_HostAddress = http://localhost:5097
+@KafkaWebApi_HostAddress = http://localhost:5000
 
-GET {{KafkaWebApi_HostAddress}}/weatherforecast/
+### Create an order
+POST {{KafkaWebApi_HostAddress}}/api/orders
+Content-Type: application/json
+
+{
+  "productName": "Laptop",
+  "quantity": 1,
+  "price": 999.99
+}
+
+### List all orders
+GET {{KafkaWebApi_HostAddress}}/api/orders
+Accept: application/json
+
+### Health check
+GET {{KafkaWebApi_HostAddress}}/health
 Accept: application/json
 
 ###

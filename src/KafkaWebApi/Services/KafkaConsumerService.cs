@@ -62,10 +62,19 @@ public class KafkaConsumerService : BackgroundService
                         "Consumed message from {Topic} [{Partition}] at offset {Offset}",
                         result.Topic, result.Partition.Value, result.Offset.Value);
 
-                    await ProcessMessageAsync(result, stoppingToken);
+                    var processed = await ProcessMessageAsync(result, stoppingToken);
 
-                    consumer.StoreOffset(result);
-                    consumer.Commit(result);
+                    if (processed)
+                    {
+                        consumer.StoreOffset(result);
+                        consumer.Commit(result);
+                    }
+                    else
+                    {
+                        _logger.LogWarning(
+                            "Skipping offset commit for [{Partition}] at {Offset} due to processing failure",
+                            result.Partition.Value, result.Offset.Value);
+                    }
 
                     _logger.LogDebug("Offset committed for [{Partition}] at {Offset}",
                         result.Partition.Value, result.Offset.Value);
@@ -97,7 +106,7 @@ public class KafkaConsumerService : BackgroundService
         }
     }
 
-    private async Task ProcessMessageAsync(ConsumeResult<string, string> result, CancellationToken cancellationToken)
+    private async Task<bool> ProcessMessageAsync(ConsumeResult<string, string> result, CancellationToken cancellationToken)
     {
         try
         {
@@ -105,8 +114,7 @@ public class KafkaConsumerService : BackgroundService
             if (order is null)
             {
                 _logger.LogWarning("Failed to deserialize message, sending to DLT");
-                await SendToDeadLetterAsync(result, "Deserialization returned null");
-                return;
+                return await SendToDeadLetterAsync(result, "Deserialization returned null");
             }
 
             order.Status = "Processed";
@@ -117,20 +125,21 @@ public class KafkaConsumerService : BackgroundService
             await notificationService.NotifyOrderProcessedAsync(order, cancellationToken);
 
             _logger.LogInformation("Order {OrderId} processed successfully", order.Id);
+            return true;
         }
         catch (JsonException ex)
         {
             _logger.LogError(ex, "Failed to deserialize message, sending to DLT");
-            await SendToDeadLetterAsync(result, $"Deserialization error: {ex.Message}");
+            return await SendToDeadLetterAsync(result, $"Deserialization error: {ex.Message}");
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error processing message, sending to DLT");
-            await SendToDeadLetterAsync(result, $"Processing error: {ex.Message}");
+            return await SendToDeadLetterAsync(result, $"Processing error: {ex.Message}");
         }
     }
 
-    private async Task SendToDeadLetterAsync(ConsumeResult<string, string> result, string reason)
+    private async Task<bool> SendToDeadLetterAsync(ConsumeResult<string, string> result, string reason)
     {
         try
         {
@@ -152,10 +161,12 @@ public class KafkaConsumerService : BackgroundService
 
             _logger.LogWarning("Message sent to dead-letter topic {Topic}: {Reason}",
                 _settings.DeadLetterTopic, reason);
+            return true;
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to send message to dead-letter topic");
+            return false;
         }
     }
 }

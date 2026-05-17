@@ -39,8 +39,7 @@ services:
       Kafka__OrdersTopic: orders
       Kafka__DeadLetterTopic: orders-dlt
       Kafka__ConsumerGroupId: orders-consumer-group
-      Kafka__MaxRetryAttempts: 3
-      Kafka__NotificationBaseUrl: http://notification-mock:5001
+      Kafka__NotificationBaseUrl: http://webapi:8080
     depends_on:
       kafka:
         condition: service_healthy
